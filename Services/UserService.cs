@@ -4,6 +4,8 @@ using BackendService.Repositories;
 using BackendService.Utils;
 using BackendService.Utils.Logger;
 using BackendService.Validators.User;
+using BPKBBackend.Models;
+using BPKBBackend.Utils;
 using FluentValidation;
 using System.Net;
 
@@ -14,13 +16,14 @@ namespace BackendService.Services
         private readonly IUserRepository _userReposistory;
         private readonly ICustomeLogger _logger;
         private readonly ICustomeHash _hash;
+        private readonly IJwtHelper _jwtHelper;
 
-
-        public UserService(IUserRepository userReposistory, ICustomeLogger logger, ICustomeHash hash)
+        public UserService(IUserRepository userReposistory, ICustomeLogger logger, ICustomeHash hash,IJwtHelper jwtHelper)
         {
             _userReposistory = userReposistory;
             _logger = logger;
             _hash = hash;
+            _jwtHelper = jwtHelper;
         }
 
         public async Task<bool> Create(UserToCreateDTO user)
@@ -66,6 +69,24 @@ namespace BackendService.Services
             _logger.Log($"Starting {this}.{nameof(GetById)}", LogLevel.Information);
 
             return await GetUserByIdAsync(id);
+        }
+
+        public async Task<string> Login(LoginRequestDTO login)
+        {
+            var userExists = await _userReposistory.GetByUsernameAsync(login.Username);
+            if (userExists == null)
+            {
+                throw new UnauthorizedAccessException($"Invalid username or password");
+            }
+
+            var comparePasswrod = _hash.Compare(login.Password, userExists.HashedPassword);
+            if (!comparePasswrod)
+            {
+                throw new UnauthorizedAccessException($"Invalid username or password");
+            }
+
+            var token = _jwtHelper.GenerateToken(login.Username,userExists.Id);
+            return token.ToString();
         }
 
         public async Task<bool> Update(UserToUpdateDTO user)

@@ -7,7 +7,18 @@ namespace BackendService.Models.DTO
         public int Id { get; set; }
         public int UserId { get; set; }
         public float TotalAmount { get; set; }
-        public CartItem[] Items { get; set; }
+        public List<CartItemDTO> Items { get; set; }
         public int Status { get; set; }
+    }
+
+    public class CreateCartDTO
+    {
+        public int UserId { get; set; }
+    }
+
+    public class CheckoutCartDTO
+    {
+        public int CartId { get; set; }
+        public int UserId { get; set; }
     }
 }

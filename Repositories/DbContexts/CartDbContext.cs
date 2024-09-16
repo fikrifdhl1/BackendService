@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BackendService.Models.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace BackendService.Repositories.DbContexts
 {
@@ -6,6 +7,9 @@ namespace BackendService.Repositories.DbContexts
     {
         public CartDbContext(DbContextOptions<CartDbContext> options) : base(options) { }
 
-        public DbSet<CartDbContext> Carts{ get; set; }
+        public DbSet<Cart> Carts{ get; set; }
+
+        public DbSet<CartItem> CartItesm { get; set; }
+
     }
 }

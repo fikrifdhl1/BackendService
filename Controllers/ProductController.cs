@@ -2,11 +2,13 @@
 using BackendService.Services;
 using BackendService.Utils.Logger;
 using BackendService.Validators.Product;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 
 namespace BackendService.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("/api/v1/[controller]")]
     public class ProductController : ControllerBase
@@ -26,7 +28,7 @@ namespace BackendService.Controllers
         public async Task<IActionResult> GetProducts()
         {
             _logger.Log($"Starting {this}.{nameof(GetProducts)}", LogLevel.Information);
-            var result = await _productService.GetAll();
+            var result = await _productService.GetAllAsync();
             var productsDTO = new List<ProductDTO>();
 
             foreach (var product in result)
@@ -65,7 +67,7 @@ namespace BackendService.Controllers
                 });
             }
 
-            var result = await _productService.Create(product);
+            var result = await _productService.CreateAsync(product);
             return Ok(new ApiResponse<object>
             {
                 Code = (int)HttpStatusCode.OK,
@@ -77,7 +79,7 @@ namespace BackendService.Controllers
         public async Task<IActionResult> GetProductById([FromRoute] int id)
         {
             _logger.Log($"Starting {this}.{nameof(GetProductById)}", LogLevel.Information);
-            var product = await _productService.GetById(id);
+            var product = await _productService.GetByIdAsync(id);
 
             var productDTO = new ProductDTO
             {
@@ -113,7 +115,7 @@ namespace BackendService.Controllers
                 });
             }
 
-            var result = await _productService.Update(product);
+            var result = await _productService.UpdateAsync(product);
             return Ok(new ApiResponse<object>
             {
                 Code = (int)HttpStatusCode.OK,
@@ -125,7 +127,7 @@ namespace BackendService.Controllers
         public async Task<IActionResult> DeleteProduct([FromRoute] int id)
         {
             _logger.Log($"Starting {this}.{nameof(DeleteProduct)}", LogLevel.Information);
-            var result = await _productService.Delete(id);
+            var result = await _productService.DeleteAsync(id);
 
             return Ok(new ApiResponse<object>
             {

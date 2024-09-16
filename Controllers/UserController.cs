@@ -2,11 +2,13 @@
 using BackendService.Models.DTO;
 using BackendService.Services;
 using BackendService.Utils.Logger;
-using BackendService.Utils.Mapper;
 using BackendService.Validators.User;
+using BPKBBackend.Models;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Net;
 
 namespace BackendService.Controllers
@@ -17,17 +19,45 @@ namespace BackendService.Controllers
     {
         private readonly IUserService _userService;
         private readonly ICustomeLogger _logger;
-        private readonly ICustomeMapper<User, UserDTO> _userMapper;
         private readonly IUserValidator _validator;
         
-        public UserController(IUserService userService, ICustomeLogger logger, ICustomeMapper<User,UserDTO> userMapper,IUserValidator validator)
+        public UserController(IUserService userService, ICustomeLogger logger,IUserValidator validator)
         {
             _userService = userService;
             _logger = logger;
-            _userMapper = userMapper;
             _validator = validator;
         }
 
+        [AllowAnonymous]
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequestDTO request)
+        {
+            _logger.Log($"Starting {this}.{nameof(Login)}", LogLevel.Information);
+            var validator = _validator.Login().Validate(request);
+            if (!validator.IsValid)
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Code = (int)HttpStatusCode.BadRequest,
+                    Message = "Validation Error",
+                    ErrorDetails = validator.ToString()
+                });
+            }
+
+            var token = await _userService.Login(request);
+
+            return Ok(new ApiResponse<LoginResponseDTO>{
+                Code = (int)HttpStatusCode.OK,
+                Message = "Login success",
+                Data = new LoginResponseDTO
+                {
+                    Token = token
+                }
+            });
+
+        }
+
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetUsers()
         {
@@ -37,7 +67,13 @@ namespace BackendService.Controllers
             var result = new List<UserDTO>();
             foreach (var user in users)
             {
-                result.Add(_userMapper.Map(user));
+                result.Add(new UserDTO
+                {
+                    Id= user.Id,
+                    Email= user.Email,
+                    Role=user.Role,
+                    Username = user.Username,
+                });
             };
 
             var response = new ApiResponse<List<UserDTO>>
@@ -50,6 +86,7 @@ namespace BackendService.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] UserToCreateDTO user)
         {
@@ -75,6 +112,7 @@ namespace BackendService.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser([FromRoute] int id, [FromBody] UserToUpdateDTO user)
         {
@@ -101,6 +139,7 @@ namespace BackendService.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser([FromRoute] int id)
         {
@@ -115,6 +154,7 @@ namespace BackendService.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> FindUserById([FromRoute] int id)
         {
@@ -126,7 +166,13 @@ namespace BackendService.Controllers
             {
                 Code = (int)HttpStatusCode.OK,
                 Message = "Success getting user",
-                Data = _userMapper.Map(user),
+                Data = new UserDTO
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    Role = user.Role,
+                    Username = user.Username,
+                },
             };
 
             return Ok(response);

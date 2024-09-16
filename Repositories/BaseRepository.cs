@@ -41,5 +41,10 @@ namespace BackendService.Repositories
         {
             await _context.SaveChangesAsync();
         }
+
+        public void Update(T data)
+        {
+            _context.Set<T>().Update(data);
+        }
     }
 }

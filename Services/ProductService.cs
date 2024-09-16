@@ -16,9 +16,9 @@ namespace BackendService.Services
             _logger = logger;
         }
 
-        public async Task<bool> Create(CreateProductDTO product)
+        public async Task<bool> CreateAsync(CreateProductDTO product)
         {
-            _logger.Log($"Starting {this}.{nameof(Create)}", LogLevel.Information);
+            _logger.Log($"Starting {this}.{nameof(CreateAsync)}", LogLevel.Information);
 
             await _productRepository.AddAsync(new Product
             {
@@ -32,33 +32,34 @@ namespace BackendService.Services
             return true;
         }
 
-        public async Task<bool> Delete(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
-            _logger.Log($"Starting {this}.{nameof(Delete)}", LogLevel.Information);
+            _logger.Log($"Starting {this}.{nameof(DeleteAsync)}", LogLevel.Information);
 
-            var product = await GetProductById(id);
+            var product = await GetProductByIdAsync(id);
 
             await _productRepository.RemoveAsync(product);
             return true;
         }
 
-        public async Task<IEnumerable<Product>> GetAll()
+        public async Task<IEnumerable<Product>> GetAllAsync()
         {
-            _logger.Log($"Starting {this}.{nameof(GetAll)}", LogLevel.Information);
+            _logger.Log($"Starting {this}.{nameof(GetAllAsync)}", LogLevel.Information);
             return await _productRepository.GetAll();
         }
 
-        public async Task<Product> GetById(int id)
+        public async Task<Product> GetByIdAsync(int id)
         {
-            _logger.Log($"Starting {this}.{nameof(GetById)}", LogLevel.Information);
-            return await GetProductById(id);
+            _logger.Log($"Starting {this}.{nameof(GetByIdAsync)}", LogLevel.Information);
+            return await GetProductByIdAsync(id);
         }
 
-        public async Task<bool> Update(UpdateProductDTO product)
-        {
-            _logger.Log($"Starting {this}.{nameof(Update)}", LogLevel.Information);
 
-            var currentProduct = await GetProductById(product.Id);
+        public async Task<bool> UpdateAsync(UpdateProductDTO product)
+        {
+            _logger.Log($"Starting {this}.{nameof(UpdateAsync)}", LogLevel.Information);
+
+            var currentProduct = await GetProductByIdAsync(product.Id);
 
             if (!string.IsNullOrEmpty(product.Name))
             {
@@ -68,13 +69,13 @@ namespace BackendService.Services
             {
                 currentProduct.Description = product.Description;
             }
-            if (product.Stock != null)
+            if (product.Stock.HasValue)
             {
-                currentProduct.Stock = (int)product.Stock;
+                currentProduct.Stock = product.Stock.Value;
             }
-            if (product.Price != null && product.Price > 0)
+            if (product.Price.HasValue && product.Price.Value > 0)
             {
-                currentProduct.Price = (float)product.Price;
+                currentProduct.Price = product.Price.Value;
             }
 
             await _productRepository.UpdateAsync(currentProduct);
@@ -82,7 +83,24 @@ namespace BackendService.Services
             return true;
         }
 
-        private async Task<Product> GetProductById(int id)
+        public async Task<bool> UpdateStockBulkAsync(List<UpdateStockDTO> products)
+        {
+            _logger.Log($"Starting {this}.{nameof(UpdateStockBulkAsync)}", LogLevel.Information);
+            foreach(var item in products)
+            {
+                var product = await GetProductByIdAsync(item.Id);
+                if (product.Stock < item.Quantity)
+                {
+                    throw new BadHttpRequestException($"The stock of product with id: {item.Id} not enough");
+                }
+                product.Stock -= item.Quantity;
+                _productRepository.Update(product);
+            }
+            await _productRepository.SaveChangesAsync();
+            return true;
+        }
+
+        private async Task<Product> GetProductByIdAsync(int id)
         {
             var product = await _productRepository.GetByIdAsync(id);
             if (product == null)

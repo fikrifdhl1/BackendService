@@ -25,4 +25,10 @@
         public float? Price { get; set; }
         public int? Stock { get; set; }
     }
+
+    public class UpdateStockDTO
+    {
+        public int Id { get; set; }
+        public int Quantity { get; set; }
+    }
 }

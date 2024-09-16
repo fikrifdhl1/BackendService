@@ -1,4 +1,5 @@
 ﻿using BackendService.Models.DTO;
+using BPKBBackend.Models;
 using FluentValidation;
 
 namespace BackendService.Validators.User
@@ -7,5 +8,6 @@ namespace BackendService.Validators.User
     {
         IValidator<UserToCreateDTO> CreateUser();
         IValidator<UserToUpdateDTO> UpdateUser();
+        IValidator<LoginRequestDTO> Login();
     }
 }
